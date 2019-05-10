@@ -1,21 +1,18 @@
 import React, { Component } from 'react';
 import moment from 'moment'
+import TimesheetDays from './TimeSheetDays';
 const formats = ['HH:mm', 'HH:mm:ss']
 
 class Day {
     id;
-    start;
-    lunchTime;
-    lunchReturn;
-    end;
-
+    hours = [];
     get total() {
         var result = null;
-        if (this.start && this.lunchTime) {
-            result = this.lunchTime.diff(this.start);
+        if (this.hours.length > 1) {
+            result = this.hours[0].diff(this.hours[1]);
         }
-        if (this.lunchReturn && this.end) {
-            result = this.end.diff(this.lunchReturn) + this.lunchTime.diff(this.start)
+        if (this.hours.length > 3) {
+            result = this.hours[3].diff(this.hours[2]) + this.hours[0].diff(this.hours[1]);
         }
 
         if (result != null) {
@@ -56,17 +53,7 @@ export default class TimeSheetComponent extends Component {
         if (day.id !== now.date())
             return false;
 
-        if (!day.start)
-            return 1 === period
-
-        if (!day.lunchTime)
-            return 2 === period
-
-        if (!day.lunchReturn)
-            return 3 === period
-
-        if (!day.end)
-            return 4 === period
+        return day.length===period
     }
 
     setHour = (day, period) => {
@@ -101,17 +88,22 @@ export default class TimeSheetComponent extends Component {
     };
 
     setData() {
-        var { now, days } = this.state;
-        for (let i = 1; i <= this.lastDayOfMonth(now.month()); i++) {
+        var { days } = this.state;
+        fetch('http://localhost:5001/timesheets')
+            .then(result => result.json()
+                .then(teste => {
+                    var month = teste[0].months[0];
 
-            //var date = new Date(now.getFullYear(), now.getMonth(), i, now.getHours(), now.getMinutes(), now.getSeconds());
-
-            days.push(new Day(i));
-
-            this.setState({ days });
-
-        }
-
+                    for (let i = 1; i <= this.lastDayOfMonth(month.number); i++) {
+                        var obj = new Day(i);
+                        var day = month.days.find(x => x.number == i);
+                        if (day) {
+                            obj.hours = day.hours.map(x=>moment.utc(x));
+                        }
+                        days.push(obj);
+                    }
+                    this.setState({ days });
+                }));
         this.setNow();
     }
 
@@ -126,10 +118,7 @@ export default class TimeSheetComponent extends Component {
 
     render() {
 
-        var { days, now, format } = this.state;
-        var hourFormated = now.format(format)
-        var getPeriod = this.getPeriod;
-        var $this = this;
+        var { days, format } = this.state;
         return (
 
             <div className="table-responsive">
@@ -137,28 +126,16 @@ export default class TimeSheetComponent extends Component {
                 <table className="table table-striped table-sm">
                     <thead>
                         <tr >
-                            <th style={{textAlign: 'center',width:'10%'}}>#</th>
-                            <th style={{textAlign: 'center',width:'18%'}}>Entrada Manhã</th>
-                            <th style={{textAlign: 'center',width:'18%'}}>Saída Manhã</th>
-                            <th style={{textAlign: 'center',width:'18%'}}>Entrada Tarde</th>
-                            <th style={{textAlign: 'center',width:'18%'}}>Saída Tarde</th>
-                            <th style={{textAlign: 'center',width:'18%'}}>Total</th>
+                            <th style={{ textAlign: 'center', width: '10%' }}>#</th>
+                            <th style={{ textAlign: 'center', width: '18%' }}>Entrada Manhã</th>
+                            <th style={{ textAlign: 'center', width: '18%' }}>Saída Manhã</th>
+                            <th style={{ textAlign: 'center', width: '18%' }}>Entrada Tarde</th>
+                            <th style={{ textAlign: 'center', width: '18%' }}>Saída Tarde</th>
+                            <th style={{ textAlign: 'center', width: '18%' }}>Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {
-                            days.map(function (day, i) {
-                                return (
-                                    <tr key="{i}" >
-                                        <td style={{textAlign: 'center',width:'10%'}}>{day.id}</td>
-                                        <td style={{textAlign: 'center',width:'18%'}}>{getPeriod(day, 1) ? (<button onClick={() => { $this.setHour(day, 1) }} className="btn btn-sm  btn-danger">{hourFormated}</button>) : (day && day.start) ? day.start.format(format) : " "}</td>
-                                        <td style={{textAlign: 'center',width:'18%'}}>{getPeriod(day, 2) ? (<button onClick={() => { $this.setHour(day, 2) }} className="btn btn-sm  btn-warning">{hourFormated}</button>) : (day && day.lunchTime) ? day.lunchTime.format(format) : ' '}</td>
-                                        <td style={{textAlign: 'center',width:'18%'}}>{getPeriod(day, 3) ? (<button onClick={() => { $this.setHour(day, 3) }} className="btn btn-sm  btn-info">{hourFormated}</button>) : (day && day.lunchReturn) ? day.lunchReturn.format(format) : ' '}</td>
-                                        <td style={{textAlign: 'center',width:'18%'}}>{getPeriod(day, 4) ? (<button onClick={() => { $this.setHour(day, 4) }} className="btn btn-sm  btn-success">{hourFormated}</button>) : (day && day.end) ? day.end.format(format) : ' '}</td>
-                                        <td style={{textAlign: 'center',width:'18%'}}>{(day && day.total) ? day.total.format(format) : ' '}</td>
-                                    </tr>
-                                );
-                            })}
+                        <TimesheetDays days={days}></TimesheetDays>
                     </tbody>
                 </table>
                 {/* /*<!-- asdasd  -->sdfsdsdfsdf*/}

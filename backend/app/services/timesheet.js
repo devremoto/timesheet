@@ -14,10 +14,10 @@ module.exports = {
                     if (result.length == 1) {
                         resolve(result[0]);
                     } else if (result.length <= 0) {
-                        reject(`The user  not found`);
+                        reject(`The timesheet  not found`);
                     } else {
                         reject(
-                            `Found ${result.length} users with (${name})`
+                            `Found ${result.length} timesheets with (${name})`
                         );
                     }
                 })
@@ -31,7 +31,7 @@ module.exports = {
         return new Promise((resolve, reject) => {
             if (entity) {
                 repository
-                    .find({ query: { name: entity.name } })
+                    .find({ query: { _id: entity._id } })
                     .then(result => {
                         if (result.length == 0) {
                             repository
@@ -45,7 +45,7 @@ module.exports = {
                                 });
                         } else {
                             reject(
-                                `"user alread exist" ${JSON.stringify(
+                                `"timesheet alread exist" ${JSON.stringify(
                                     result.name
                                 )}`
                             );
@@ -67,7 +67,7 @@ module.exports = {
                         let search = result.find(x => x.refid != entity.refid);
                         if (search) {
                             reject(
-                                `already exists a user with the name ${
+                                `already exists a timesheet with the name ${
                                     entity.name
                                 }`
                             );
@@ -82,7 +82,7 @@ module.exports = {
                                 reject(error);
                             });
                     } else if (result.length > 1) {
-                        reject(`more than one user with the same name`);
+                        reject(`more than one timesheet with the same name`);
                     } else {
                         reject(`object not found ${result.length}`);
                     }
