@@ -1,0 +1,4 @@
+.sonarlint
+.scannerlint
+.sonarqube
+node_modules

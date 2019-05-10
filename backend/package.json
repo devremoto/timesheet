@@ -1,0 +1,27 @@
+{
+	"name": "arquivo",
+	"version": "1.0.0",
+	"description": "Exemplo de microserviço em node",
+	"main": "index.js",
+	"scripts": {
+		"mon": "nodemon index.js",
+		"start": "node index.js",
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "CLI CSF",
+	"license": "ISC",
+	"dependencies": {
+		"body-parser": "^1.18.3",
+		"cors": "^2.8.5",
+		"ejs": "^2.6.1",
+		"express": "^4.16.4",
+		"express-load": "^1.1.16",
+		"express-validator": "^5.3.0",
+		"jsnlog": "^2.28.0",
+		"mongoose": "^5.4.19",
+		"redis": "^2.8.0",
+		"socket.io": "^2.2.0",
+		"swagger-jsdoc": "^3.2.9",
+		"swagger-ui-express": "^4.0.1"
+	}
+}
