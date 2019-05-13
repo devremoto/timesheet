@@ -1,5 +1,6 @@
 const JL = require('jsnlog').JL;
-const service = require('../services/user');
+const model = require('../models/user');
+const service = require('../services/crud')(model);
 
 module.exports = {
     list: (req, res) => {

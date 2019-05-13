@@ -1,18 +1,53 @@
 import React, { Component } from 'react';
 import moment from 'moment'
 import TimesheetDays from './TimeSheetDays';
-const formats = ['HH:mm', 'HH:mm:ss']
 
-class Day {
+const formats = ['HH:mm', 'HH:mm:ss']
+export class Month {
+    constructor() {
+        this.days = [];
+        this.format = 'HH:mm';
+    }
+    days;
+    number;
+    format;
+    get total() {
+        var hours = 0;
+        var minutes = 0;
+        var seconds = 0;
+        var parts = this.format.split(':')
+        this.days.map(x => {
+            if (x.total) {
+                var dateParts = x.total.format(this.format).split(':')
+                if (dateParts.length === 3) {
+                    seconds += dateParts[2] * 1;
+                }
+                hours += dateParts[0] * 1;
+                minutes += dateParts[1] * 1;
+            }
+
+            return null;
+        })
+        minutes += seconds / 60;
+        hours += parseInt(minutes / 60);
+        minutes = parseInt(minutes % 60);
+        seconds = parseInt(seconds % 60);
+        var result = `${hours}:${minutes < 10 ? `0${minutes}` : minutes}`;
+        if (parts.length === 3)
+            result = `${result}:${seconds < 10 ? `0${seconds}` : seconds}`;
+        return result;
+    }
+}
+export class Day {
     id;
     hours = [];
     get total() {
         var result = null;
         if (this.hours.length > 1) {
-            result = this.hours[0].diff(this.hours[1]);
+            result = this.hours[1].diff(this.hours[0]);
         }
-        if (this.hours.length > 3) {
-            result = this.hours[3].diff(this.hours[2]) + this.hours[0].diff(this.hours[1]);
+        if (this.hours.length > 1) {
+            result = this.hours[3].diff(this.hours[2]) + this.hours[1].diff(this.hours[0]);
         }
 
         if (result != null) {
@@ -32,8 +67,9 @@ export default class TimeSheetComponent extends Component {
 
     constructor(props) {
         super(props);
-        // Don't call this.setState() here!
-        this.state = { now: new moment(), days: [], format: formats[0] };
+        var month = new Month();
+        month.format = formats[0];
+        this.state = { now: new moment(), month, format: formats[0] };
         this.setHour = this.setHour.bind(this);
 
     }
@@ -42,19 +78,12 @@ export default class TimeSheetComponent extends Component {
     }
 
     toogleFormat = () => {
-        var { format } = this.state;
+        var { format, month } = this.state;
         format = (format === formats[0]) ? formats[1] : formats[0];
-        this.setState({ format })
+        month.format = format;
+        this.setState({ format, month })
     }
 
-    getPeriod = (day, period) => {
-        var { now } = this.state;
-        //console.log(day)
-        if (day.id !== now.date())
-            return false;
-
-        return day.length===period
-    }
 
     setHour = (day, period) => {
         var { days } = this.state;
@@ -88,37 +117,34 @@ export default class TimeSheetComponent extends Component {
     };
 
     setData() {
-        var { days } = this.state;
+        var { month, format, now } = this.state;
+        console.log(month);
+        month.format = format;
         fetch('http://localhost:5001/timesheets')
             .then(result => result.json()
                 .then(teste => {
-                    var month = teste[0].months[0];
-
+                    month.number = (teste && teste[0].months) ? teste[0].months[0].number : now.month();
                     for (let i = 1; i <= this.lastDayOfMonth(month.number); i++) {
                         var obj = new Day(i);
-                        var day = month.days.find(x => x.number == i);
-                        if (day) {
-                            obj.hours = day.hours.map(x=>moment.utc(x));
+                        if (teste && teste[0].months) {
+                            var day = teste[0].months[0].days.find(x => x.number === i);
+                            if (day) {
+                                obj.hours = day.hours.map(x => moment.utc(x));
+                            }
                         }
-                        days.push(obj);
+                        month.days.push(obj);
                     }
-                    this.setState({ days });
+
+                    this.setState({ month });
                 }));
-        this.setNow();
     }
 
-    setNow() {
-        this.setState({ now: new moment() })
-        var $this = this;
-        setTimeout(() => {
-            $this.setNow()
-        }, 1000)
-    }
+
 
 
     render() {
 
-        var { days, format } = this.state;
+        var { month, format } = this.state;
         return (
 
             <div className="table-responsive">
@@ -126,16 +152,16 @@ export default class TimeSheetComponent extends Component {
                 <table className="table table-striped table-sm">
                     <thead>
                         <tr >
-                            <th style={{ textAlign: 'center', width: '10%' }}>#</th>
-                            <th style={{ textAlign: 'center', width: '18%' }}>Entrada Manhã</th>
-                            <th style={{ textAlign: 'center', width: '18%' }}>Saída Manhã</th>
-                            <th style={{ textAlign: 'center', width: '18%' }}>Entrada Tarde</th>
-                            <th style={{ textAlign: 'center', width: '18%' }}>Saída Tarde</th>
-                            <th style={{ textAlign: 'center', width: '18%' }}>Total</th>
+                            <th style={{ textAlign: 'center', width: '4%' }}>#</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Entrada Manhã</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Saída Manhã</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Entrada Tarde</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Saída Tarde</th>
+                            <th style={{ textAlign: 'right', width: '4%' }}>Total</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <TimesheetDays days={days}></TimesheetDays>
+                        <TimesheetDays month={month} format={format}></TimesheetDays>
                     </tbody>
                 </table>
                 {/* /*<!-- asdasd  -->sdfsdsdfsdf*/}
