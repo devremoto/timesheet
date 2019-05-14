@@ -1,10 +1,12 @@
 import React, { Component } from 'react'
 import moment from 'moment';
+import TimeSheetService from '../services/timesheet';
 
 export default class TimeSheetDays extends Component {
     constructor(props) {
         super(props)
-        this.state={now: new moment()}
+        this.state = { now: new moment(), month: props.month, format: props.format }
+        this.service = new TimeSheetService();
         this.setNow();
     }
 
@@ -18,6 +20,13 @@ export default class TimeSheetDays extends Component {
         }, 1000)
     }
 
+    setHour = (day, hour) => {
+        var { month } = this.state;
+        var index = month.days.findIndex(x => x.id === day.id);
+        month.days[index].hours.push(hour)
+        this.setState({ month });
+    }
+
     getPeriod = (day, period) => {
         var now = new moment();
         if (day.id !== now.date())
@@ -28,19 +37,28 @@ export default class TimeSheetDays extends Component {
 
     renderCell = (day) => {
 
-        var { format } = this.props;
+        var { format } = this.state;
         var now = new moment();
         return [0, 1, 2, 3].map(x => (
             <td key={x} style={{ textAlign: 'center' }}>
-                {this.getPeriod(day, x) ? (<button onClick={() => { this.setHour(day, 1) }} className="btn btn-sm  btn-danger">{now.format(format)}</button>) : (day && day.hours[x]) ? day.hours[x].format(format) : ""}
+                {this.getPeriod(day, x) ? (<button onClick={() => { this.setHour(day, now) }} className="btn btn-sm  btn-danger">{now.format(format)}</button>) : (day && day.hours[x]) ? day.hours[x].format(format) : ""}
             </td>))
     }
 
-    render() {
-        var { month, format } = this.props;
-        var renderCell = this.renderCell
+    rowTotal() {
+        var { month } = this.state;
+        return (
+            <tr>
+                <td style={{ textAlign: 'center' }}></td>
+                <td colSpan="4"></td>
+                <td style={{ textAlign: 'right' }}>{month.total}-{month.totalFormated}-{month.amount(70)}</td>
+            </tr>)
+    }
 
-        var rows
+    render() {
+        var { month, format } = this.state;
+        var renderCell = this.renderCell;
+        var rows;
         if (month && month.days)
             rows = month.days.map(function (day, i) {
                 return (
@@ -55,17 +73,9 @@ export default class TimeSheetDays extends Component {
 
         return (
             <React.Fragment>
-                <tr>
-                    <td style={{ textAlign: 'center' }}></td>
-                    <td colSpan="4"></td>
-                    <td style={{ textAlign: 'right' }}>{month.total}</td>
-                </tr>
+                {this.rowTotal()}
                 {rows}
-                <tr>
-                    <td style={{ textAlign: 'center' }}></td>
-                    <td colSpan="4"></td>
-                    <td style={{ textAlign: 'right' }}>{month.total}</td>
-                </tr>
+                {this.rowTotal()}
             </React.Fragment>
         )
     }

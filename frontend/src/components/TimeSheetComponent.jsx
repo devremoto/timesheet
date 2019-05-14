@@ -1,54 +1,64 @@
 import React, { Component } from 'react';
 import moment from 'moment'
 import TimesheetDays from './TimeSheetDays';
+import TimeSheetService from '../services/timesheet';
 
 const formats = ['HH:mm', 'HH:mm:ss']
 export class Month {
     constructor() {
         this.days = [];
         this.format = 'HH:mm';
+
     }
     days;
     number;
     format;
+    _total;
+
     get total() {
         var hours = 0;
         var minutes = 0;
         var seconds = 0;
-        var parts = this.format.split(':')
         this.days.map(x => {
             if (x.total) {
                 var dateParts = x.total.format(this.format).split(':')
                 if (dateParts.length === 3) {
-                    seconds += dateParts[2] * 1;
+                    seconds += dateParts[2] / 3600;
                 }
                 hours += dateParts[0] * 1;
-                minutes += dateParts[1] * 1;
+                minutes += dateParts[1] / 60;
             }
-
             return null;
-        })
-        minutes += seconds / 60;
-        hours += parseInt(minutes / 60);
-        minutes = parseInt(minutes % 60);
-        seconds = parseInt(seconds % 60);
-        var result = `${hours}:${minutes < 10 ? `0${minutes}` : minutes}`;
-        if (parts.length === 3)
-            result = `${result}:${seconds < 10 ? `0${seconds}` : seconds}`;
-        return result;
+        });
+        this._total = hours + minutes + seconds;
+        return this._total;
+    }
+
+    get totalFormated() {
+        var hours = parseInt(this._total);
+        var minDec = ((this._total - hours) * 60).toFixed(2);
+        var minutes = parseInt(minDec);
+        var seconds = parseInt((minDec - minutes) * 60);
+        if (this.format.split(':').length === 3)
+            return `${this.formatNumber(hours)}:${this.formatNumber(minutes)}:${this.formatNumber(seconds)}`;
+        return `${this.formatNumber(hours)}:${this.formatNumber(minutes)}`;
+    }
+
+    formatNumber = (time) => {
+        return time < 10 ? `0${time}` : time
+    }    
+
+    amount(value = 0) {
+        return value * this._total
     }
 }
 export class Day {
     id;
     hours = [];
     get total() {
-        var result = null;
-        if (this.hours.length > 1) {
-            result = this.hours[1].diff(this.hours[0]);
-        }
-        if (this.hours.length > 1) {
-            result = this.hours[3].diff(this.hours[2]) + this.hours[1].diff(this.hours[0]);
-        }
+        var result = null
+        if (this.hours.length > 1)
+            result = this.hours.reduce((previous, current) => current.diff(previous));
 
         if (result != null) {
             return moment.utc(result)
@@ -70,7 +80,7 @@ export default class TimeSheetComponent extends Component {
         var month = new Month();
         month.format = formats[0];
         this.state = { now: new moment(), month, format: formats[0] };
-        this.setHour = this.setHour.bind(this);
+        this.service = new TimeSheetService();
 
     }
     componentDidMount() {
@@ -82,32 +92,7 @@ export default class TimeSheetComponent extends Component {
         format = (format === formats[0]) ? formats[1] : formats[0];
         month.format = format;
         this.setState({ format, month })
-    }
-
-
-    setHour = (day, period) => {
-        var { days } = this.state;
-        var day2 = days.find(x => x.id === day.id);
-        switch (period) {
-
-            case 2:
-                day2.lunchTime = new moment();
-                break;
-            case 3:
-                day2.lunchReturn = new moment();
-                break;
-            case 4:
-                day2.end = new moment();
-                break;
-            default:
-                day2.start = new moment();
-                break;
-        }
-        //days[day.id] = day2;
-        this.setState({ days });
-
-        //;
-    }
+    }  
 
     lastDayOfMonth(month) {
         var year = new moment().year();
@@ -120,23 +105,21 @@ export default class TimeSheetComponent extends Component {
         var { month, format, now } = this.state;
         console.log(month);
         month.format = format;
-        fetch('http://localhost:5001/timesheets')
-            .then(result => result.json()
-                .then(teste => {
-                    month.number = (teste && teste[0].months) ? teste[0].months[0].number : now.month();
-                    for (let i = 1; i <= this.lastDayOfMonth(month.number); i++) {
-                        var obj = new Day(i);
-                        if (teste && teste[0].months) {
-                            var day = teste[0].months[0].days.find(x => x.number === i);
-                            if (day) {
-                                obj.hours = day.hours.map(x => moment.utc(x));
-                            }
-                        }
-                        month.days.push(obj);
+        this.service.getByMonth(month.number).then(result => {
+            month.number = (result && result[0].months) ? result[0].months[0].number : now.month();
+            for (let i = 1; i <= this.lastDayOfMonth(month.number); i++) {
+                var obj = new Day(i);
+                if (result && result[0].months) {
+                    var day = result[0].months[0].days.find(x => x.number === i);
+                    if (day) {
+                        obj.hours = day.hours.map(x => moment.utc(x));
                     }
+                }
+                month.days.push(obj);
+            }
 
-                    this.setState({ month });
-                }));
+            this.setState({ month });
+        });
     }
 
 
@@ -164,7 +147,6 @@ export default class TimeSheetComponent extends Component {
                         <TimesheetDays month={month} format={format}></TimesheetDays>
                     </tbody>
                 </table>
-                {/* /*<!-- asdasd  -->sdfsdsdfsdf*/}
             </div>
         );
     }
