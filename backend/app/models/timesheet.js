@@ -1,16 +1,6 @@
 const mongoose = require("mongoose");
+const { month } = require("./month");
 const userSchema = require('./user');
-
-const day = mongoose.model('day', {
-    number:Number,
-    hours: []
-});
-
-const month = mongoose.model('month', {
-    name: String,
-    number: Number,
-    days: [day.schema]
-});
 
 const schema = mongoose.model('timesheet', {
     user: userSchema.schema,

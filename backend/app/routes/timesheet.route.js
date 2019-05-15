@@ -70,7 +70,7 @@ module.exports = function(app) {
      *       500:
      *         description: Internal server error
      */
-    app.get(name + '/:name', controller.getByName);
+    app.get(name + '/:number', controller.getByMonth);
 
     /**
      * @swagger

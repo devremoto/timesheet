@@ -92,8 +92,12 @@ module.exports = function(model){
                     });
             });
         },
-        find: data => {
-            return connection.find({ model, query: data.query });
+        find: (data,fields) => {
+            return connection.find({ model, query: data.query },fields);
+        },
+
+        findOne: (data,fields) => {
+            return connection.findOne({ model, query: data.query },fields);
         },
         emit: (event, data, socketIo) => {
             emitter.emit(event, { data, socketIo });

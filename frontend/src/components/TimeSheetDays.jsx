@@ -5,7 +5,7 @@ import TimeSheetService from '../services/timesheet';
 export default class TimeSheetDays extends Component {
     constructor(props) {
         super(props)
-        this.state = { now: new moment(), month: props.month, format: props.format }
+        this.state = { now: new moment(), month: props.timesheet.months[0], format: props.timesheet.format }
         this.service = new TimeSheetService();
         this.setNow();
     }
@@ -22,9 +22,14 @@ export default class TimeSheetDays extends Component {
 
     setHour = (day, hour) => {
         var { month } = this.state;
+        console.log(month);
         var index = month.days.findIndex(x => x.id === day.id);
         month.days[index].hours.push(hour)
         this.setState({ month });
+        this.service.setHour(month).then(
+            success => console.log(success),
+            error => console.log(error)
+        )
     }
 
     getPeriod = (day, period) => {

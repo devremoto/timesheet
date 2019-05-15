@@ -5,7 +5,7 @@ export default class TimeSheetService {
 
     getByMonth(month) {
         return new Promise((resolve, reject) => {
-            axios.get(`${this.baseUrl}/timesheets`)
+            axios.get(`${this.baseUrl}/timesheets/${month}`)
                 .then(
                     result => resolve(result.data),
                     error => reject(error)
@@ -13,9 +13,9 @@ export default class TimeSheetService {
         })
     }
 
-    setHour(user, month) {
+    setHour(month) {
         return new Promise((resolve, reject) => {
-            axios.path(`${this.baseUrl}/timesheets`, { user, month })
+            axios.put(`${this.baseUrl}/timesheets`, month )
                 .then(
                     result => resolve(result.data),
                     error => reject(error)

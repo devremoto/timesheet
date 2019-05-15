@@ -2,84 +2,19 @@ import React, { Component } from 'react';
 import moment from 'moment'
 import TimesheetDays from './TimeSheetDays';
 import TimeSheetService from '../services/timesheet';
-
+import Month from '../models/month';
+import Day from '../models/day';
+import TimeSheet from '../models/timesheet';
 const formats = ['HH:mm', 'HH:mm:ss']
-export class Month {
-    constructor() {
-        this.days = [];
-        this.format = 'HH:mm';
 
-    }
-    days;
-    number;
-    format;
-    _total;
-
-    get total() {
-        var hours = 0;
-        var minutes = 0;
-        var seconds = 0;
-        this.days.map(x => {
-            if (x.total) {
-                var dateParts = x.total.format(this.format).split(':')
-                if (dateParts.length === 3) {
-                    seconds += dateParts[2] / 3600;
-                }
-                hours += dateParts[0] * 1;
-                minutes += dateParts[1] / 60;
-            }
-            return null;
-        });
-        this._total = hours + minutes + seconds;
-        return this._total;
-    }
-
-    get totalFormated() {
-        var hours = parseInt(this._total);
-        var minDec = ((this._total - hours) * 60).toFixed(2);
-        var minutes = parseInt(minDec);
-        var seconds = parseInt((minDec - minutes) * 60);
-        if (this.format.split(':').length === 3)
-            return `${this.formatNumber(hours)}:${this.formatNumber(minutes)}:${this.formatNumber(seconds)}`;
-        return `${this.formatNumber(hours)}:${this.formatNumber(minutes)}`;
-    }
-
-    formatNumber = (time) => {
-        return time < 10 ? `0${time}` : time
-    }    
-
-    amount(value = 0) {
-        return value * this._total
-    }
-}
-export class Day {
-    id;
-    hours = [];
-    get total() {
-        var result = null
-        if (this.hours.length > 1)
-            result = this.hours.reduce((previous, current) => current.diff(previous));
-
-        if (result != null) {
-            return moment.utc(result)
-        }
-        return null
-    }
-
-    constructor(i) {
-        this.id = i;
-    }
-
-
-}
 
 export default class TimeSheetComponent extends Component {
 
     constructor(props) {
         super(props);
-        var month = new Month();
-        month.format = formats[0];
-        this.state = { now: new moment(), month, format: formats[0] };
+        var timesheet = new TimeSheet();
+        timesheet.format = formats[0];
+        this.state = { now: new moment(), timesheet, format: formats[0] };
         this.service = new TimeSheetService();
 
     }
@@ -88,10 +23,9 @@ export default class TimeSheetComponent extends Component {
     }
 
     toogleFormat = () => {
-        var { format, month } = this.state;
-        format = (format === formats[0]) ? formats[1] : formats[0];
-        month.format = format;
-        this.setState({ format, month })
+        var { timesheet } = this.state;
+        timesheet.format = (timesheet.format === formats[0]) ? formats[1] : formats[0];
+        this.setState({ timesheet })
     }  
 
     lastDayOfMonth(month) {
@@ -102,36 +36,34 @@ export default class TimeSheetComponent extends Component {
     };
 
     setData() {
-        var { month, format, now } = this.state;
-        console.log(month);
-        month.format = format;
-        this.service.getByMonth(month.number).then(result => {
-            month.number = (result && result[0].months) ? result[0].months[0].number : now.month();
-            for (let i = 1; i <= this.lastDayOfMonth(month.number); i++) {
-                var obj = new Day(i);
-                if (result && result[0].months) {
-                    var day = result[0].months[0].days.find(x => x.number === i);
+        var { timesheet, now } = this.state;
+        this.service.getByMonth(5).then(result => {
+            //timesheet.months = result.months
+            timesheet.months.push(new Month(result.months[0]))
+            console.log(timesheet);
+            for (let i = 1; i <= this.lastDayOfMonth(timesheet.months[0].number); i++) {
+                console.log(timesheet.months[0].days[i-1].number*1);
+                    var day = timesheet.months[0].days.findIndex(x => x.number == i)
                     if (day) {
-                        obj.hours = day.hours.map(x => moment.utc(x));
-                    }
-                }
-                month.days.push(obj);
+                        timesheet.months[0].days[i] =new Day(i);
+                        timesheet.months[0].days[i].hours = day.hours;
+                        //obj.hours = day.hours.map(x => moment.utc(x));
+                    }else{
+                        timesheet.months[0].days.push(new Day(i));
+                    }                
             }
 
-            this.setState({ month });
+            this.setState({ timesheet });
         });
     }
 
-
-
-
     render() {
 
-        var { month, format } = this.state;
+        var { timesheet } = this.state;
         return (
 
             <div className="table-responsive">
-                <button className="btn btn-sm  btn-primary" onClick={this.toogleFormat}>toogle format {format}</button><br /><br />
+                <button className="btn btn-sm  btn-primary" onClick={this.toogleFormat}>toogle format {timesheet.format}</button><br /><br />
                 <table className="table table-striped table-sm">
                     <thead>
                         <tr >
@@ -144,7 +76,7 @@ export default class TimeSheetComponent extends Component {
                         </tr>
                     </thead>
                     <tbody>
-                        <TimesheetDays month={month} format={format}></TimesheetDays>
+                        <TimesheetDays timesheet={timesheet}></TimesheetDays>
                     </tbody>
                 </table>
             </div>

@@ -1,35 +1,20 @@
 const JL = require('jsnlog').JL;
 const crudRepository = require('../infra/repositories/crud');
 
-module.exports = function(model){
-    const repository= crudRepository(model);
+module.exports = function (model) {
+    const repository = crudRepository(model);
     return {
-        
+
 
         list: () => {
-            return repository.getAll().catch(error => console.log(error));
+            return repository.getAll();
         },
 
-        getBykey:(key,value)=>{
-            return new Promise((resolve, reject) => {
-                var query = JSON.parse(`${key}:"${value}"`)
-                repository
-                    .find({ query })
-                    .then(result => {
-                        if (result.length == 1) {
-                            resolve(result[0]);
-                        } else if (result.length <= 0) {
-                            reject(`The data is not found`);
-                        } else {
-                            reject(
-                                `Found ${result.length} ${key} with (${value})`
-                            );
-                        }
-                    })
-                    .catch(error => {
-                        reject(error);
-                    });
-            })
+        find: (query, fields) => {
+            return repository.find({ query }, fields);
+        },
+        findOne: (query, fields) => {
+            return repository.findOne({ query }, fields)
         },
 
         getByName: name => {
@@ -46,10 +31,10 @@ module.exports = function(model){
                                 `Found ${result.length} data with (${name})`
                             );
                         }
-                    })
-                    .catch(error => {
-                        reject(error);
-                    });
+                    },
+                        error => reject(error)
+                    )
+                    .catch(error => reject(error))
             });
         },
 
@@ -62,9 +47,7 @@ module.exports = function(model){
                             if (result.length == 0) {
                                 repository
                                     .add(entity, socketIo)
-                                    .then(result => {
-                                        resolve(result);
-                                    })
+                                    .then(result => resolve(result), error => reject(error))
                                     .catch(err => {
                                         JL('mongo-service:create').error(err);
                                         reject(err);
@@ -84,52 +67,35 @@ module.exports = function(model){
         },
 
         update: (entity, socketIo) => {
+            console.log(entity);
             return new Promise((resolve, reject) => {
                 repository
-                    .find({ query: { name: entity.name } })
-                    .then(result => {
-                        JL('mongo-service:update').info('find');
-                        if (result.length <= 1) {
-                            let search = result.find(x => x.refid != entity.refid);
-                            if (search) {
-                                reject(
-                                    `already exists a data with the name ${
-                                    entity.name
-                                    }`
-                                );
-                            }
-                            repository
-                                .update(entity, socketIo)
-                                .then(result => {
-                                    resolve(result);
-                                })
-                                .catch(error => {
-                                    JL('mongo-service:update error').error(error);
-                                    reject(error);
-                                });
-                        } else if (result.length > 1) {
-                            reject(`more than one data with the same name`);
-                        } else {
-                            reject(`object not found ${result.length}`);
-                        }
-                    })
+                    .update(entity, socketIo)
+                    .then(result => resolve(result), error => reject(error))
                     .catch(error => {
+                        JL('mongo-service:update error').error(error);
                         reject(error);
                     });
-            });
+            })
         },
 
         delete: (id, socketIo) => {
             return new Promise((resolve, reject) => {
-                repository.find({ query: { _id: id } }).then(entity => {
-                    if (entity) {
-                        repository.delete(id, socketIo).then(result => {
-                            resolve(result);
-                        });
-                    } else {
-                        reject(`Can not delete the Id ${id} not found`);
-                    }
-                });
+                repository.find({ query: { _id: id } })
+                    .then(entity => {
+                        if (entity) {
+                            repository
+                                .delete(id, socketIo)
+                                .then(
+                                    result => resolve(result),
+                                    error => reject(error)
+                                );
+                        } else {
+                            reject(`Can not delete the Id ${id} not found`);
+                        }
+                    },
+                        error => reject(error))
+                    .catch(error => reject(error));
             });
         }
     }

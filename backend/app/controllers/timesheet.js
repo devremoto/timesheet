@@ -1,6 +1,6 @@
 const JL = require('jsnlog').JL;
 const model = require('./../models/timesheet');
-const service =  require('../services/crud')(model);
+const service = require('../services/crud')(model);
 
 module.exports = {
     list: (req, res) => {
@@ -24,18 +24,22 @@ module.exports = {
             });
     },
 
-    getByName: (req, res) => {
-        const name = req.params.name;
+    getByMonth: (req, res) => {
+        const number = req.params.number;
         service
-            .getByName(name)
+            .findOne({ "months.number": number },{months:{$elemMatch:{number:number}}})
             .then(result => {
-                res.send(result);
-            })
+                if (result && result.months)
+                    res.send(result);
+                else
+                    res.status(404).send()
+            }
+            )
             .catch(error => {
                 JL('controller').error(
-                    `error calling repository: ${JSON.stringify(error)}`
+                    `error calling service: ${JSON.stringify(error)}`
                 );
-                res.status(500).send({ error: `${JSON.stringify(error)}` });
+                res.status(500).send({ error: `${JSON.stringify(req.params)}` });
             });
     },
 
