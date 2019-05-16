@@ -13,9 +13,9 @@ export default class TimeSheetService {
         })
     }
 
-    setHour(month) {
+    setHour(query) {
         return new Promise((resolve, reject) => {
-            axios.put(`${this.baseUrl}/timesheets`, month )
+            axios.put(`${this.baseUrl}/timesheets/partial`, query)
                 .then(
                     result => resolve(result.data),
                     error => reject(error)

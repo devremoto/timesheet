@@ -86,5 +86,15 @@ module.exports = {
                     error => reject(error)
                 ).catch(error => reject(error))
         })
+    },
+    path:(data)=>{
+        return new Promise((resolve, reject) => {
+            data.model
+                .update(data.query, data.action)
+                .then(
+                    docs => resolve(docs),
+                    error => reject(error)
+                ).catch(error => reject(error))
+        })
     }
 }

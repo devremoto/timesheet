@@ -1,14 +1,22 @@
+import Day from './day';
 class Month {
     constructor(month) {
-        this.days = month && month.days || [];
-        this.number = month && month.number || new Date().getMonth()+1;
+        this.name = month.name;
+        this.number = month && month.number;
         this.format = 'HH:mm';
+        this.days = month.days.map(x=>{
+            return new Day(x.number,x);
+        });
+        
+        this.setTotal()
     }
+
     days;
+    name;
     number;
     format;
     _total;
-    get total(){
+    setTotal(){
         var hours = 0;
         var minutes = 0;
         var seconds = 0;
@@ -25,6 +33,10 @@ class Month {
         });
         this._total = hours + minutes + seconds;
         return this._total;
+    }
+    
+    get total(){
+       return this.setTotal();
     }
     get totalFormated() {
         var hours = parseInt(this._total);

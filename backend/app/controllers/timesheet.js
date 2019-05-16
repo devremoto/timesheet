@@ -27,7 +27,7 @@ module.exports = {
     getByMonth: (req, res) => {
         const number = req.params.number;
         service
-            .findOne({ "months.number": number },{months:{$elemMatch:{number:number}}})
+            .findOne({ "months.number": number }, { months: { $elemMatch: { number: number } } })
             .then(result => {
                 if (result && result.months)
                     res.send(result);
@@ -63,6 +63,31 @@ module.exports = {
     update: (req, res) => {
         service
             .update(req.body, req.io)
+            .then(result => {
+                JL('controller').info(
+                    `feature updated sucessfully: ${JSON.stringify(result)}`
+                );
+                res.send(result);
+            })
+            .catch(error => {
+                JL('controller').error(
+                    `error calling repository: ${JSON.stringify(error)}`
+                );
+                res.status(500).send({ error: `${JSON.stringify(error)}` });
+            });
+    },
+
+    path: (req, res) => {
+
+        var payload = req.body;
+        var path = {
+            _id: payload._id,
+            'months.days': { $elemMatch: { _id: { $eq: payload.day._id } } },
+            
+        }
+    var action = { $push: { hours: payload.day.hour }}
+        service
+            .path(path, action, req.io)
             .then(result => {
                 JL('controller').info(
                     `feature updated sucessfully: ${JSON.stringify(result)}`

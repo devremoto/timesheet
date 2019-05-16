@@ -79,6 +79,18 @@ module.exports = function (model) {
             })
         },
 
+        path: (query, action , socketIo) => {
+            return new Promise((resolve, reject) => {
+                repository
+                    .path(query,action, socketIo)
+                    .then(result => resolve(result), error => reject(error))
+                    .catch(error => {
+                        JL('mongo-service:update error').error(error);
+                        reject(error);
+                    });
+            })
+        },
+
         delete: (id, socketIo) => {
             return new Promise((resolve, reject) => {
                 repository.find({ query: { _id: id } })

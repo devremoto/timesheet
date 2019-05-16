@@ -1,32 +1,69 @@
 import React, { Component } from 'react'
 import moment from 'moment';
 import TimeSheetService from '../services/timesheet';
+import TimeSheet from '../models/timesheet';
+import Month from '../models/month';
+import Day from '../models/day';
+
+const formats = ['HH:mm', 'HH:mm:ss']
 
 export default class TimeSheetDays extends Component {
     constructor(props) {
         super(props)
-        this.state = { now: new moment(), month: props.timesheet.months[0], format: props.timesheet.format }
+        var timesheet = new TimeSheet()
+        timesheet.format = formats[0];
+        this.state = { now: new moment(), timesheet }
         this.service = new TimeSheetService();
+        this.setNow = this.setNow.bind(this);
+
+
+    }
+
+    toogleFormat = () => {
+        var { timesheet } = this.state;
+        var format = (timesheet.format === formats[0]) ? formats[1] : formats[0];
+        timesheet.format = format;
+        timesheet.month.format = format;
+        this.setState({ timesheet })
+    }
+
+    lastDayOfMonth(month) {
+        var year = new moment().year();
+        var leapYear = (year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0))
+        const months = [31, (leapYear ? 29 : 28), 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        return months[month - 1];
+    };
+
+    setData() {
+        var { timesheet } = this.state;
+        this.service.getByMonth(new Date().getMonth() + 1).then(result => {
+            timesheet._id=result._id
+            timesheet.month = new Month(result.months[0])
+            for (let i = timesheet.month.days.length + 1; i <= this.lastDayOfMonth(timesheet.month.number); i++) {
+                timesheet.month.days.push(new Day(i));
+            }
+            this.setState({ timesheet });
+        });
+    }
+
+    componentDidMount() {
+        this.setData();
         this.setNow();
     }
 
-    total = new moment();
-
     setNow() {
         this.setState({ now: new moment() })
-        var $this = this;
+        //var $this = this;
         setTimeout(() => {
-            $this.setNow()
+            this.setNow()
         }, 1000)
     }
 
     setHour = (day, hour) => {
-        var { month } = this.state;
-        console.log(month);
-        var index = month.days.findIndex(x => x.id === day.id);
-        month.days[index].hours.push(hour)
-        this.setState({ month });
-        this.service.setHour(month).then(
+        console.log(day);
+        var { timesheet } = this.state;
+        //this.setState({ month });
+        this.service.setHour({_id:timesheet._id,day:{_id:day._id,hour}}).then(
             success => console.log(success),
             error => console.log(error)
         )
@@ -41,27 +78,34 @@ export default class TimeSheetDays extends Component {
     }
 
     renderCell = (day) => {
-
-        var { format } = this.state;
+        var { timesheet} = this.state;
         var now = new moment();
         return [0, 1, 2, 3].map(x => (
             <td key={x} style={{ textAlign: 'center' }}>
-                {this.getPeriod(day, x) ? (<button onClick={() => { this.setHour(day, now) }} className="btn btn-sm  btn-danger">{now.format(format)}</button>) : (day && day.hours[x]) ? day.hours[x].format(format) : ""}
+                {this.getPeriod(day, x) ? (<button onClick={() => { this.setHour(day, now) }} className="btn btn-sm  btn-danger">{now.format(timesheet.format)}</button>) : (day && day.hours[x]) ? day.hours[x].format(timesheet.format) : ""}
             </td>))
     }
 
+    getTotal() {
+        var { timesheet } = this.state;
+        var month = timesheet.month;
+        return month && month.total ? month.totalFormated : '';
+    }
+
     rowTotal() {
-        var { month } = this.state;
         return (
             <tr>
                 <td style={{ textAlign: 'center' }}></td>
                 <td colSpan="4"></td>
-                <td style={{ textAlign: 'right' }}>{month.total}-{month.totalFormated}-{month.amount(70)}</td>
+                <td style={{ textAlign: 'right' }}>{this.getTotal()}</td>
             </tr>)
     }
 
-    render() {
-        var { month, format } = this.state;
+    rows() {
+        var { timesheet } = this.state;
+        var month = timesheet.month;
+        var format = timesheet.format;
+        console.log(format)
         var renderCell = this.renderCell;
         var rows;
         if (month && month.days)
@@ -75,13 +119,32 @@ export default class TimeSheetDays extends Component {
 
                 );
             })
+        return rows
+    }
 
+    render() {
+        var { format } = this.state;
         return (
-            <React.Fragment>
-                {this.rowTotal()}
-                {rows}
-                {this.rowTotal()}
-            </React.Fragment>
+            <div className="table-responsive">
+                <button className="btn btn-sm  btn-primary" onClick={this.toogleFormat}>toogle format {format}</button><br /><br />
+                <table className="table table-striped table-sm">
+                    <thead>
+                        <tr >
+                            <th style={{ textAlign: 'center', width: '4%' }}>#</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Entrada Manhã</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Saída Manhã</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Entrada Tarde</th>
+                            <th style={{ textAlign: 'center', width: '23%' }}>Saída Tarde</th>
+                            <th style={{ textAlign: 'right', width: '4%' }}>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {this.rowTotal()}
+                        {this.rows()}
+                        {this.rowTotal()}
+                    </tbody>
+                </table>
+            </div>
         )
     }
 }

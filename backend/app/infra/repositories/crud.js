@@ -99,6 +99,11 @@ module.exports = function(model){
         findOne: (data,fields) => {
             return connection.findOne({ model, query: data.query },fields);
         },
+
+        path: (query, action) => {
+            return connection
+                    .path({model,query,action})
+        },
         emit: (event, data, socketIo) => {
             emitter.emit(event, { data, socketIo });
         }

@@ -124,6 +124,8 @@ module.exports = function(app) {
      */
     app.put(name + '/', controller.update);
 
+    app.put(name + '/partial', controller.path);
+
     /**
      * @swagger
      * /timesheets/{id}:
