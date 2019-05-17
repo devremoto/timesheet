@@ -9,12 +9,7 @@ module.exports = {
             .then(result => {
                 req.io.emit('list', result);
                 JL('controller:list').info(result);
-                //console.log(req.io);
                 req.io.on('list', result => {
-                    console.log(
-                        '=================io funcionando=================\n'
-                    );
-                    console.log(result);
                 });
                 res.send(result);
             })

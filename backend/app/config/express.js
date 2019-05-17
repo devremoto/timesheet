@@ -14,10 +14,7 @@ module.exports = (function() {
     const io = require('socket.io')(http);
     app.set('io', io);
     app.get('io').on('connection', socket => {
-        console.log('connected', socket.id);
         socket.on('list', result => {
-            console.log('=================io funcionando=================\n');
-            console.log(result);
         });
     });
     app.use((req, res, next) => {

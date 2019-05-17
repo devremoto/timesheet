@@ -1,6 +1,6 @@
 import moment from 'moment'
 export default class Day {
-    id;
+    number;
     _id;
     hours = [];
     get total(){
@@ -16,7 +16,7 @@ export default class Day {
     }
 
     constructor(i, day) {
-        this.id = i;
+        this.number = i;
         if (day) {
             
             this.transform(day)

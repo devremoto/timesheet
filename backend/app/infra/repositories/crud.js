@@ -15,12 +15,12 @@ function sync(data) {
             data.socketIo.emit('update', list);
         })
         .catch(err => {
-            console.log(err);
         });
 }
 
 module.exports = function(model){
     return {
+        
         add: (data, socketIo) => {
             var $this = module.exports;
             return new Promise((resolve, reject) => {
@@ -30,7 +30,7 @@ module.exports = function(model){
                 connection
                     .add(model, data)
                     .then(res => {
-                        $this.emit('create', data, socketIo);
+                       // $this.emit('create', data, socketIo);
                         resolve(res);
                     })
                     .catch(err => {
@@ -60,7 +60,6 @@ module.exports = function(model){
                 connection
                     .update(model, data)
                     .then(res => {
-                        console.log(data);
                         JL('repository').info(
                             `update - OK:${JSON.stringify(data)} ${JSON.stringify(
                                 res
@@ -92,6 +91,7 @@ module.exports = function(model){
                     });
             });
         },
+
         find: (data,fields) => {
             return connection.find({ model, query: data.query },fields);
         },
@@ -104,6 +104,7 @@ module.exports = function(model){
             return connection
                     .path({model,query,action})
         },
+        
         emit: (event, data, socketIo) => {
             emitter.emit(event, { data, socketIo });
         }

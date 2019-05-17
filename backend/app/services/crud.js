@@ -67,7 +67,6 @@ module.exports = function (model) {
         },
 
         update: (entity, socketIo) => {
-            console.log(entity);
             return new Promise((resolve, reject) => {
                 repository
                     .update(entity, socketIo)

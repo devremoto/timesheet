@@ -48,15 +48,20 @@ export default class TimeSheetDays extends Component {
 
     setData() {
         var { timesheet } = this.state;
+        timesheet.month = new Month();
+        timesheet.month.number = new Date().getMonth() + 1;
+        console.log(timesheet);
+        for (let i = 1; i <= this.lastDayOfMonth(new Date().getMonth() + 1); i++) {
+            timesheet.month.days.push(new Day(i));
+        }
         this.service.getByMonth(new Date().getMonth() + 1).then(result => {
+            var month = new Month(result.months[0]);
             timesheet._id = result._id;
-            timesheet.month = new Month(result.months[0]);
-            for (
-                let i = timesheet.month.days.length + 1;
-                i <= this.lastDayOfMonth(timesheet.month.number);
-                i++
-            ) {
-                timesheet.month.days.push(new Day(i));
+            for (let i = 1; i <= this.lastDayOfMonth(timesheet.month.number); i++) {
+                var day = month.days.find(x => x.number === i);
+                if (day) {
+                    timesheet.month.days[day.number - 1] = day;
+                }
             }
             this.setState({ timesheet });
         });
@@ -75,41 +80,53 @@ export default class TimeSheetDays extends Component {
         }, 1000);
     }
 
-    setHour = (day, hour) => {
-        console.log(day);
+    setHour = (entry) => {
+        console.log(entry);
         var { timesheet } = this.state;
-        //this.setState({ month });
+        this.setState({ timesheet });
         this.service
-            .setHour({ _id: timesheet._id, day: { _id: day._id, hour } })
+            .setHour(entry)
             .then(success => console.log(success), error => console.log(error));
     };
 
     getPeriod = (day, period) => {
         var now = new moment();
-        if (day.id !== now.date()) return false;
+        if (day.number !== now.date()) return false;
 
         return day.hours.length === period;
     };
 
     renderCell = day => {
         var { timesheet } = this.state;
-        var now = new moment();
+        var hour = new moment();
         return [0, 1, 2, 3].map(x => (
             <td key={x} style={{ textAlign: 'center' }}>
                 {this.getPeriod(day, x) ? (
                     <button
                         onClick={() => {
-                            this.setHour(day, now);
+                            console.log(timesheet)
+                            this.setHour({
+                                _id: timesheet._id,
+                                month: {
+                                    _id: timesheet.month._id,
+                                    number: timesheet.month.number,
+                                    day: {
+                                        _id: day._id,
+                                        hour,
+                                        number: day.number
+                                    }
+                                }
+                            });
                         }}
                         className="btn btn-sm  btn-danger"
                     >
-                        {now.format(timesheet.format)}
+                        {hour.format(timesheet.format)}
                     </button>
                 ) : day && day.hours[x] ? (
                     day.hours[x].format(timesheet.format)
                 ) : (
-                    ''
-                )}
+                            ''
+                        )}
             </td>
         ));
     };
@@ -138,10 +155,10 @@ export default class TimeSheetDays extends Component {
         var renderCell = this.renderCell;
         var rows;
         if (month && month.days)
-            rows = month.days.map(function(day, i) {
+            rows = month.days.map(function (day, i) {
                 return (
                     <tr key={i}>
-                        <td style={{ textAlign: 'center' }}>{day.id}</td>
+                        <td style={{ textAlign: 'center' }}>{day.number}</td>
                         {renderCell(day)}
                         <td style={{ textAlign: 'right' }}>
                             {day && day.total ? day.total.format(format) : ' '}
